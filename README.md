@@ -1,37 +1,43 @@
-Travel Planning Assistant for ROMA (Free API Optimized Setup)
+# Travel Planning Assistant for ROMA (Free API Optimized Setup)
+
 This tutorial shows how to extend ROMA (installed with the kasnadoona5/ROMA_sentient optimized free-API setup) with a Travel Planning Assistant capable of generating detailed, personalized itineraries using free weather and Wikipedia data.
 
-Overview
-Uses Open-Meteo API for free weather forecasts (no signup).
+## Overview
 
-Uses Wikipedia API for destination info.
+- Uses Open-Meteo API for free weather forecasts (no signup).
+- Uses Wikipedia API for destination info.
+- Runs on existing ROMA free-tier optimized LLMs: Grok-4-Fast and GLM-4.5-Air.
+- Adds a new executor adapter, prompt, and configuration.
+- Fully compatible with Docker deployment on your VPS.
 
-Runs on existing ROMA free-tier optimized LLMs: Grok-4-Fast and GLM-4.5-Air.
+## Step 1: Update .env with Travel APIs
 
-Adds a new executor adapter, prompt, and configuration.
+Edit your `.env` file in the ROMA root folder:
 
-Fully compatible with Docker deployment on your VPS.
-
-Step 1: Update .env with Travel APIs
-Edit your .env file in the ROMA root folder:
-
-bash
+```bash
 nano .env
+```
+
 Add these lines:
 
-text
+```text
 OPEN_METEO_BASE_URL=https://api.open-meteo.com/v1/forecast
 WIKIPEDIA_API_URL=https://en.wikipedia.org/w/api.php
+```
+
 Save and exit.
 
-Step 2: Add the Travel Planner Adapter
+## Step 2: Add the Travel Planner Adapter
+
 Edit adapter file:
 
-bash
+```bash
 nano src/sentientresearchagent/hierarchical_agent_framework/agents/adapters.py
+```
+
 At the bottom, append:
 
-python
+```python
 import os
 import requests
 from loguru import logger
@@ -117,16 +123,21 @@ class TravelPlannerAdapter(LlmApiAdapter):
         except Exception as e:
             logger.error(f"[Wikipedia Info] Error: {e}")
             return "Information unavailable"
+```
+
 Save and close.
 
-Step 3: Add Executor Prompt
+## Step 3: Add Executor Prompt
+
 Edit executor prompts file:
 
-bash
+```bash
 nano src/sentientresearchagent/hierarchical_agent_framework/agent_configs/prompts/executor_prompts.py
+```
+
 Add the following prompt (use triple quotes exactly):
 
-python
+```python
 TRAVEL_PLANNER_EXECUTOR_SYSTEM_MESSAGE = """You are an expert travel planning assistant specialized in creating comprehensive, personalized itineraries.
 
 ### Your Task:
@@ -182,16 +193,21 @@ Analyze the provided destination data (weather, attractions, local info) and cre
 6. Be honest about challenges (weather, costs, logistics)
 
 Present information clearly and actionably."""
+```
+
 Save and exit.
 
-Step 4: Register Travel Planner in agents.yaml
+## Step 4: Register Travel Planner in agents.yaml
+
 Edit:
 
-bash
+```bash
 nano src/sentientresearchagent/hierarchical_agent_framework/agent_configs/agents.yaml
-Add this entry under agents: list (adjust indentation):
+```
 
-text
+Add this entry under `agents:` list (adjust indentation):
+
+```yaml
 - name: "TravelPlannerExecutor"
   type: "executor"
   adapter_class: "ExecutorAdapter"
@@ -212,55 +228,65 @@ text
       - "travel_planner"
 
   enabled: true
+```
+
 Save and close.
 
-Step 5: Update Deep Research Agent Profile
+## Step 5: Update Deep Research Agent Profile
+
 Edit profile YAML:
 
-bash
+```bash
 nano src/sentientresearchagent/hierarchical_agent_framework/agent_configs/profiles/deep_research_agent.yaml
-Add "TRAVEL_PLANNING": "TravelPlannerExecutor" under executor_adapter_names:
+```
 
-text
+Add `"TRAVEL_PLANNING": "TravelPlannerExecutor"` under `executor_adapter_names`:
+
+```yaml
 executor_adapter_names:
   SEARCH: "ExaComprehensiveSearcher"
   TRAVEL_PLANNING: "TravelPlannerExecutor"
+```
+
 Save.
 
-Step 6: Rebuild and Relaunch ROMA
-bash
+## Step 6: Rebuild and Relaunch ROMA
+
+```bash
 cd ~/ROMA/docker/
 sudo docker compose down
 sudo docker compose up -d --build
+```
+
 Monitor logs:
 
-bash
+```bash
 sudo docker compose logs -f backend
+```
+
 Verify no errors, and TravelPlannerExecutor is loaded.
 
-Step 7: Test Your Travel Assistant
+## Step 7: Test Your Travel Assistant
+
 Access ROMA frontend:
 
-text
+```
 http://<your_vps_ip>:3000
+```
+
 Try commands like:
 
-Plan a 5-day trip to Paris
+- Plan a 5-day trip to Paris
+- Create itinerary for Tokyo | March 15-22, 2026
+- Suggest a budget week in Barcelona
 
-Create itinerary for Tokyo | March 15-22, 2026
+## Summary
 
-Suggest a budget week in Barcelona
-
-Summary
-This tutorial builds on ROMA installed with the kasnadoona5/ROMA_sentient free-API optimized setup.
-
-The Travel Planner Executor uses only free, public data sources for detailed travel plans.
-
-Use "ExecutorAdapter" and "WRITE" task type as per ROMA expected config.
-
-The prompt fully guides the agent to generate comprehensive, structured itineraries.
-
-Ready to run on your VPS with Docker deployment.
+- This tutorial builds on ROMA installed with the kasnadoona5/ROMA_sentient free-API optimized setup.
+- The Travel Planner Executor uses only free, public data sources for detailed travel plans.
+- Use "ExecutorAdapter" and "WRITE" task type as per ROMA expected config.
+- The prompt fully guides the agent to generate comprehensive, structured itineraries.
+- Ready to run on your VPS with Docker deployment.
 
 Contact me if you want sample adapter code files or have any questions!
 
