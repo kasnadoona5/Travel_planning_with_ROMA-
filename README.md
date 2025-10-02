@@ -282,18 +282,54 @@ Try commands like:
 - Suggest a budget week in Barcelona
 
 # (Second Method)
-Step 1: Update .env with Travel APIs
-Edit your .env file in the ROMA root folder:
-bashnano .env
+# Travel Planning Assistant for ROMA (Free API Optimized Setup)
+
+This tutorial shows how to extend ROMA (installed with the kasnadoona5/ROMA_sentient optimized free-API setup) with a Travel Planning Assistant capable of generating detailed, personalized itineraries using free weather and Wikipedia data.
+
+## Overview
+
+- Uses Open-Meteo API for free weather forecasts (no signup required)
+- Uses Wikipedia API for destination information
+- Configurable to use any free-tier LLM (Grok, Microsoft, GLM, etc.)
+- Adds a custom executor adapter with weather/Wikipedia integration
+- Fully compatible with Docker deployment on your VPS
+
+## Prerequisites
+
+- ROMA installed following kasnadoona5/ROMA_sentient setup
+- Docker and Docker Compose running
+- OpenRouter API key configured
+- Basic familiarity with terminal/SSH
+
+## Step 1: Update .env with Travel APIs
+
+Edit your `.env` file in the ROMA root folder:
+
+```bash
+nano .env
+```
+
 Add these lines at the bottom:
-bashOPEN_METEO_BASE_URL=https://api.open-meteo.com/v1/forecast
+
+```bash
+OPEN_METEO_BASE_URL=https://api.open-meteo.com/v1/forecast
 WIKIPEDIA_API_URL=https://en.wikipedia.org/w/api.php
-Save and exit (Ctrl+X, Y, Enter).
-Step 2: Add the Travel Planner Adapter
+```
+
+Save and exit (`Ctrl+X`, `Y`, `Enter`).
+
+## Step 2: Add the Travel Planner Adapter
+
 Edit the adapters file:
-bashnano src/sentientresearchagent/hierarchical_agent_framework/agents/adapters.py
+
+```bash
+nano src/sentientresearchagent/hierarchical_agent_framework/agents/adapters.py
+```
+
 At the bottom of the file, append this complete class:
-pythonclass TravelPlannerAdapter(ExecutorAdapter):
+
+```python
+class TravelPlannerAdapter(ExecutorAdapter):
     """Travel planning executor that fetches weather and destination data."""
 
     def __init__(self, agno_agent_instance=None, agent_name="TravelPlannerAdapter"):
@@ -412,12 +448,22 @@ Please create a detailed day-by-day itinerary following the travel planning form
         except Exception as e:
             logger.error(f"[Wikipedia Info] Error: {e}")
             return "Information unavailable"
+```
+
 Save and exit.
-Step 3: Add Executor Prompt
+
+## Step 3: Add Executor Prompt
+
 Edit the executor prompts file:
-bashnano src/sentientresearchagent/hierarchical_agent_framework/agent_configs/prompts/executor_prompts.py
+
+```bash
+nano src/sentientresearchagent/hierarchical_agent_framework/agent_configs/prompts/executor_prompts.py
+```
+
 At the bottom, add this prompt:
-pythonTRAVEL_PLANNER_EXECUTOR_SYSTEM_MESSAGE = """You are an expert travel planning assistant specialized in creating comprehensive, personalized itineraries.
+
+```python
+TRAVEL_PLANNER_EXECUTOR_SYSTEM_MESSAGE = """You are an expert travel planning assistant specialized in creating comprehensive, personalized itineraries.
 
 ### Your Task:
 Analyze the provided destination data (weather, attractions, local info) and create a detailed travel itinerary.
@@ -472,29 +518,50 @@ Analyze the provided destination data (weather, attractions, local info) and cre
 6. Be honest about challenges (weather, costs, logistics)
 
 Present information clearly and actionably."""
+```
+
 Save and exit.
-Step 4: Register TravelPlannerAdapter in Validation Schema
+
+## Step 4: Register TravelPlannerAdapter in Validation Schema
+
 Edit the models file:
-bashnano /root/ROMA/src/sentientresearchagent/hierarchical_agent_framework/agent_configs/models.py
-Find the validate_adapter_class function and update two locations:
-Location 1: Add to valid_adapters list
-Change FROM:
-pythonvalid_adapters = [
+
+```bash
+nano /root/ROMA/src/sentientresearchagent/hierarchical_agent_framework/agent_configs/models.py
+```
+
+Find the `validate_adapter_class` function and update two locations:
+
+### Location 1: Add to valid_adapters list
+
+**Change FROM:**
+
+```python
+valid_adapters = [
     "PlannerAdapter", "ExecutorAdapter", "AtomizerAdapter",
     "AggregatorAdapter", "PlanModifierAdapter",
     "OpenAICustomSearchAdapter", "GeminiCustomSearchAdapter",
     "ExaCustomSearchAdapter"
 ]
-Change TO:
-pythonvalid_adapters = [
+```
+
+**Change TO:**
+
+```python
+valid_adapters = [
     "PlannerAdapter", "ExecutorAdapter", "AtomizerAdapter",
     "AggregatorAdapter", "PlanModifierAdapter",
     "OpenAICustomSearchAdapter", "GeminiCustomSearchAdapter",
     "ExaCustomSearchAdapter", "TravelPlannerAdapter"
 ]
-Location 2: Add to type_adapter_map
-Change FROM:
-pythontype_adapter_map = {
+```
+
+### Location 2: Add to type_adapter_map
+
+**Change FROM:**
+
+```python
+type_adapter_map = {
     "planner": ["PlannerAdapter"],
     "executor": ["ExecutorAdapter"],
     "aggregator": ["AggregatorAdapter"],
@@ -502,8 +569,12 @@ pythontype_adapter_map = {
     "plan_modifier": ["PlanModifierAdapter"],
     "custom_search": ["OpenAICustomSearchAdapter", "GeminiCustomSearchAdapter", "ExaCustomSearchAdapter"]
 }
-Change TO:
-pythontype_adapter_map = {
+```
+
+**Change TO:**
+
+```python
+type_adapter_map = {
     "planner": ["PlannerAdapter"],
     "executor": ["ExecutorAdapter", "TravelPlannerAdapter"],
     "aggregator": ["AggregatorAdapter"],
@@ -511,15 +582,30 @@ pythontype_adapter_map = {
     "plan_modifier": ["PlanModifierAdapter"],
     "custom_search": ["OpenAICustomSearchAdapter", "GeminiCustomSearchAdapter", "ExaCustomSearchAdapter"]
 }
+```
+
 Save and exit.
-Step 5: Register TravelPlannerAdapter in Agent Factory
+
+## Step 5: Register TravelPlannerAdapter in Agent Factory
+
 Edit the agent factory file:
-bashnano /root/ROMA/src/sentientresearchagent/hierarchical_agent_framework/agent_configs/agent_factory.py
-Update 1: Add Import (around line 45)
-Find this line:
-pythonfrom ..agents.adapters import PlannerAdapter, ExecutorAdapter, AtomizerAdapter, AggregatorAdapter, PlanModifierAdapter
-Change TO:
-pythonfrom ..agents.adapters import (
+
+```bash
+nano /root/ROMA/src/sentientresearchagent/hierarchical_agent_framework/agent_configs/agent_factory.py
+```
+
+### Update 1: Add Import (around line 45)
+
+**Find this line:**
+
+```python
+from ..agents.adapters import PlannerAdapter, ExecutorAdapter, AtomizerAdapter, AggregatorAdapter, PlanModifierAdapter
+```
+
+**Change TO:**
+
+```python
+from ..agents.adapters import (
     PlannerAdapter, 
     ExecutorAdapter, 
     AtomizerAdapter, 
@@ -527,9 +613,14 @@ pythonfrom ..agents.adapters import (
     PlanModifierAdapter,
     TravelPlannerAdapter
 )
-Update 2: Add to adapter_classes dictionary (around line 74)
-Find:
-pythonself.adapter_classes = {
+```
+
+### Update 2: Add to adapter_classes dictionary (around line 74)
+
+**Find:**
+
+```python
+self.adapter_classes = {
     'PlannerAdapter': PlannerAdapter,
     'ExecutorAdapter': ExecutorAdapter,
     'AtomizerAdapter': AtomizerAdapter,
@@ -539,8 +630,12 @@ pythonself.adapter_classes = {
     'GeminiCustomSearchAdapter': GeminiCustomSearchAdapter,
     'ExaCustomSearchAdapter': ExaCustomSearchAdapter,
 }
-Change TO:
-pythonself.adapter_classes = {
+```
+
+**Change TO:**
+
+```python
+self.adapter_classes = {
     'PlannerAdapter': PlannerAdapter,
     'ExecutorAdapter': ExecutorAdapter,
     'AtomizerAdapter': AtomizerAdapter,
@@ -551,12 +646,22 @@ pythonself.adapter_classes = {
     'ExaCustomSearchAdapter': ExaCustomSearchAdapter,
     'TravelPlannerAdapter': TravelPlannerAdapter,
 }
+```
+
 Save and exit.
-Step 6: Register Travel Planner in agents.yaml
+
+## Step 6: Register Travel Planner in agents.yaml
+
 Edit:
-bashnano src/sentientresearchagent/hierarchical_agent_framework/agent_configs/agents.yaml
-Add this entry under the agents: list:
-yaml- name: "TravelPlannerExecutor"
+
+```bash
+nano src/sentientresearchagent/hierarchical_agent_framework/agent_configs/agents.yaml
+```
+
+Add this entry under the `agents:` list:
+
+```yaml
+- name: "TravelPlannerExecutor"
   type: "executor"
   adapter_class: "TravelPlannerAdapter"
   description: "Travel planning executor with weather and destination info"
@@ -576,43 +681,107 @@ yaml- name: "TravelPlannerExecutor"
       - "travel_planner"
 
   enabled: true
-Important Notes:
+```
 
-You can change model_id to any free model like "openrouter/x-ai/grok-4-fast:free"
-The adapter_class MUST be "TravelPlannerAdapter" (not "ExecutorAdapter")
+**Important Notes:**
+
+- You can change `model_id` to any free model like `"openrouter/x-ai/grok-4-fast:free"`
+- The `adapter_class` MUST be `"TravelPlannerAdapter"` (not `"ExecutorAdapter"`)
 
 Save and exit.
-Step 7: Disable Conflicting Executors
-In the same agents.yaml file, find these agents and disable them to prevent conflicts:
-Disable BasicReportWriter
-Find:
-yaml- name: BasicReportWriter
+
+## Step 7: Disable Conflicting Executors
+
+In the same `agents.yaml` file, find these agents and disable them to prevent conflicts:
+
+### Disable BasicReportWriter
+
+**Find:**
+
+```yaml
+- name: BasicReportWriter
   ...
   enabled: true
-Change to:
-yaml  enabled: false
-Disable CryptoResearchExecutor
-Find:
-yaml- name: CryptoResearchExecutor
+```
+
+**Change to:**
+
+```yaml
+  enabled: false
+```
+
+### Disable CryptoResearchExecutor
+
+**Find:**
+
+```yaml
+- name: CryptoResearchExecutor
   ...
   enabled: true
-Change to:
-yaml  enabled: false
+```
+
+**Change to:**
+
+```yaml
+  enabled: false
+```
+
 Save and exit.
-Step 8: Rebuild and Relaunch ROMA
-bashcd ~/ROMA/docker/
+
+## Step 8: Rebuild and Relaunch ROMA
+
+```bash
+cd ~/ROMA/docker/
 sudo docker compose down
 sudo docker compose up -d --build
+```
+
 Wait 2-3 minutes for containers to fully start.
-Step 9: Verify Startup Logs
+
+## Step 9: Verify Startup Logs
+
 Monitor logs to confirm successful registration:
-bashsudo docker compose logs -f backend | grep -E "(TravelPlanner|validation error|Overwriting.*WRITE)"
-You should see:
+
+```bash
+sudo docker compose logs -f backend | grep -E "(TravelPlanner|validation error|Overwriting.*WRITE)"
+```
+
+**You should see:**
+
+```
 ✅ Created valid BaseAdapter for TravelPlannerExecutor: TravelPlannerAdapter
 AgentRegistry: Registered adapter 'TravelPlannerExecutor' for action 'execute', task_type 'WRITE'
-You should NOT see:
+```
+
+**You should NOT see:**
+
+```
 Overwriting agent 'TravelPlannerAdapter' with ...
+```
+
 If you see overwriting, another WRITE executor is still enabled—go back and disable it.
+
+## Step 10: Test Your Travel Assistant
+
+### Access ROMA Frontend
+
+```
+http://<your_vps_ip>:3000
+```
+
+
+### Watch Logs During Query
+
+```bash
+sudo docker compose logs -f backend | grep -E "(🗺️|TravelPlanner|Forcing LLM)"
+```
+
+### Modify Itinerary Format
+
+Edit the prompt in `executor_prompts.py` to change output structure.
+
+
+
 
 <img width="1833" height="834" alt="image" src="https://github.com/user-attachments/assets/65a4a98b-7eea-4281-939d-f9740a3b57cc" />
 <img width="1126" height="1200" alt="image" src="https://github.com/user-attachments/assets/d8e15b46-cef4-4787-a4d8-cc7f8a36d180" />
@@ -626,6 +795,10 @@ If you see overwriting, another WRITE executor is still enabled—go back and di
 - Use "ExecutorAdapter" and "WRITE" task type as per ROMA expected config.
 - The prompt fully guides the agent to generate comprehensive, structured itineraries.
 - Ready to run on your VPS with Docker deployment.
+
+### Add More APIs
+
+Extend `TravelPlannerAdapter` class with additional API calls (restaurants, attractions, etc.).
 
 Contact me if you want sample adapter code files or have any questions!
 
