@@ -284,23 +284,6 @@ Try commands like:
 # (Second Method)
 # Travel Planning Assistant for ROMA (Free API Optimized Setup)
 
-This tutorial shows how to extend ROMA (installed with the kasnadoona5/ROMA_sentient optimized free-API setup) with a Travel Planning Assistant capable of generating detailed, personalized itineraries using free weather and Wikipedia data.
-
-## Overview
-
-- Uses Open-Meteo API for free weather forecasts (no signup required)
-- Uses Wikipedia API for destination information
-- Configurable to use any free-tier LLM (Grok, Microsoft, GLM, etc.)
-- Adds a custom executor adapter with weather/Wikipedia integration
-- Fully compatible with Docker deployment on your VPS
-
-## Prerequisites
-
-- ROMA installed following kasnadoona5/ROMA_sentient setup
-- Docker and Docker Compose running
-- OpenRouter API key configured
-- Basic familiarity with terminal/SSH
-
 ## Step 1: Update .env with Travel APIs
 
 Edit your `.env` file in the ROMA root folder:
